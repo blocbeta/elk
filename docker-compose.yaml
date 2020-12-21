@@ -1,0 +1,61 @@
+version: "3.8"
+services:
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: es01
+    environment:
+      - "node.name=es01"
+      - "cluster.name=es-docker-cluster"
+      - "discovery.type=single-node"
+      - "bootstrap.memory_lock=true"
+      - "http.cors.allow-origin=http://localhost:8080"
+      - "http.cors.enabled=true"
+      - "http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization"
+      - "http.cors.allow-credentials=true"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1g
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+
+  kib01:
+    image: docker.elastic.co/kibana/kibana:7.10.1
+    container_name: kib01
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://es01:9200
+      ELASTICSEARCH_HOSTS: http://es01:9200
+    networks:
+      - elastic
+
+  postgres:
+    image: postgres:12-alpine
+    volumes:
+      - ~/docker-volumes/blocbeta:/var/lib/postgresql/data
+    ports:
+      - 6543:6543
+    environment:
+      POSTGRES_DB: blocbeta
+      POSTGRES_PASSWORD: blocbeta
+      POSTGRES_USER: blocbeta
+
+  elasticvue:
+    image: cars10/elasticvue:latest
+    ports:
+      - 8080:8080
+
+volumes:
+  data01:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge
